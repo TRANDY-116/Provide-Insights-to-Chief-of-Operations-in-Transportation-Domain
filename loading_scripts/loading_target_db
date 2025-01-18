@@ -1,0 +1,62 @@
+from mage_ai.settings.repo import get_repo_path
+from mage_ai.io.config import ConfigFileLoader
+from mage_ai.io.postgres import Postgres
+import pandas as pd
+from os import path
+from typing import Dict
+
+if 'data_exporter' not in globals():
+    from mage_ai.data_preparation.decorators import data_exporter
+
+
+@data_exporter
+def export_data_to_postgres(**kwargs) -> None:
+    """
+    Template for exporting data to a PostgreSQL database.
+    Specify your configuration settings in 'io_config.yaml'.
+
+    Docs: https://docs.mage.ai/design/data-loading#postgresql
+
+    """
+    print("Starting data export process...")
+
+    schema_name = 'targets_db'  # Specify the name of the schema to export data to
+    
+    print("Loading CSV files into DataFrames...")
+     # Load CSVs into DataFrames
+    city_target_passenger_rating = pd.read_csv('/home/src/city_target_passenger_rating.csv')
+    print("Loaded city_target_passenger_rating.csv")
+
+    monthly_target_trips = pd.read_csv('/home/src/monthly_target_trips.csv')
+    print("Loaded monthly_target_trips.csv")
+
+    monthly_target_new_passengers = pd.read_csv('/home/src/monthly_target_new_passengers.csv')
+    print("Loaded monthly_target_new_passengers.csv")
+
+    tables = {
+        'city_target_passenger_rating': city_target_passenger_rating,
+        'monthly_target_trips' : monthly_target_trips,
+        'monthly_target_new_passengers': monthly_target_new_passengers,
+        }
+
+    print("Mapped table names to DataFrames.")
+
+    config_path = path.join(get_repo_path(), 'io_config.yaml')
+    config_profile = 'goodcabs'
+
+    print("Initializing connection to PostgreSQL database...")
+    with Postgres.with_config(ConfigFileLoader(config_path, config_profile)) as loader:
+        print("Connected to PostgreSQL database.")
+        
+        for table_name, df in tables.items():
+            print(f"Exporting table '{table_name}' to schema '{schema_name}'...")
+            loader.export(
+                df,
+                schema_name,
+                table_name,
+                index=False,  # Specifies whether to include index in the exported table
+                if_exists='replace',  # Replace table if it already exists
+            )
+            print(f"Exported table '{table_name}' successfully.")
+    
+    print("Data export process completed!")
