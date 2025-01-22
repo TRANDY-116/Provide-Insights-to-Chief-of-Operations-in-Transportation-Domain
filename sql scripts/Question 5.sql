@@ -1,3 +1,7 @@
+/*	5.	Weekend vs. Weekday Trip Demand by City --
+		Compare the total trips taken on weekdays versus weekends for each city over the six-month period. 
+        Identify cities with a strong preference for either weekend or weekday trips to understand demand variations.
+*/
 SELECT
     dc.city_name,
     COUNT(CASE WHEN dm.day_type = 'Weekday' THEN 1 ELSE NULL END) AS weekday_trips,

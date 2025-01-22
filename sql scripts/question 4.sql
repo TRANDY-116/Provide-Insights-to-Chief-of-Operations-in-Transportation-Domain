@@ -1,4 +1,7 @@
--- Peak and Low Demand Months by City
+/*	4.	Peak and Low Demand Months by City --
+		For each city, identify the month with the highest total trips (peak demand) and the month with the lowest total trips (low demand). 
+        This analysis will help Goodcabs understand seasonal patterns and adjust resources accordingly.
+*/
 WITH AggregatedCounts AS (
     SELECT 
         dc.city_name,

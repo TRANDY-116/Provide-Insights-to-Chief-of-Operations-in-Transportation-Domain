@@ -1,4 +1,7 @@
--- Average Fare per Trip by City
+/*	2.	Avg fare per trip by city; highest & lowest --
+		Calculate the average fare per trip for each city and compare it with the city's average trip distance. 
+        Identify the cities with the highest and lowest average fare per trip to assess pricing efficiency across locations.
+*/
 SELECT 
 	dim_city.city_name,
 	ROUND(CAST(AVG(fare_amount) AS NUMERIC), 2) AS avg_fare_by_city,

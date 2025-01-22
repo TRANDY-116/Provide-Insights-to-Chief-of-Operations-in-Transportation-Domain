@@ -1,3 +1,7 @@
+/*
+This script contains the SQL commands to clean the data in the database and ensure each column has the right type.
+*/
+
 -- Alter dim_date table
 ALTER TABLE trips_db.dim_date
 ALTER COLUMN _date TYPE date USING _date::DATE,

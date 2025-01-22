@@ -1,3 +1,9 @@
+/*	6.	Repeat Passenger Frequency and City Contribution Analysis --
+		Analyse the frequency of trips taken by repeat passengers in each city (e.g., % of repeat passengers taking 2 trips, 3 trips, etc.). 
+		Identify which cities contribute most to higher trip frequencies among repeat passengers, 
+		and examine if there are distinguishable patterns between tourism-focused and business-focused cities.
+*/
+
 SELECT 
     city_name, 
     ROUND((SUM(CASE WHEN trip_count = '2-Trips' THEN repeat_passenger_count ELSE 0 END) * 100.0 / SUM(repeat_passenger_count)), 2) AS "2-Trip",

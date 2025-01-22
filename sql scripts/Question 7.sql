@@ -1,3 +1,8 @@
+/*	7.	Monthly Target Achievement Analysis for Key Metrics --
+		For each city, evaluate monthly performance against targets for total trips, new passengers, and average passenger ratings 
+        from targets db. Determine if each metric met, exceeded, or missed the target, and calculate the percentage difference. 
+        Identify any consistent patterns in target achievement, particularly across tourism versus business-focused cities.
+*/
 WITH new_passengers AS (
     SELECT 
         city_id,

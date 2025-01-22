@@ -1,4 +1,7 @@
--- Average ratings by city and passenger type
+/*	3.	Avg Ratings by city & passenger type --
+		Calculate the average passenger and driver ratings for each city, segmented by passenger type (new vs. repeat). 
+        Identify cities with the highest and lowest average ratings.
+*/
 SELECT 
 	dc.city_name,
 	ROUND(AVG(driver_rating), 2) AS avg_driver_rating,

@@ -1,3 +1,6 @@
+/*	1.	Top and Bottom Performing Cities -- 
+		Identify the top 3 and bottom 3 cities by total trips over the entire analysis period.
+*/
 -- Top 3 cities and 3 least cities in terms of trip counts
 WITH trip_counts AS (
     SELECT 
