@@ -55,12 +55,12 @@ WITH avg_rpr_by_month AS (
 SELECT *
 FROM avg_rpr_by_month
 ORDER BY rpr_percent DESC
-LIMIT 1
+LIMIT 2
 )
 UNION ALL
 (
 SELECT *
 FROM avg_rpr_by_month
 ORDER BY rpr_percent ASC
-LIMIT 1
+LIMIT 2
 );

@@ -17,177 +17,53 @@ GROUP BY
 ORDER BY 
     total_trips DESC;
 
--- Business Request - 2: Monthly City-Level Trips Target Performance Report
-CREATE TABLE trips_db.monthly_target_achievement AS
-WITH new_passengers AS (
-    SELECT 
-        city_id,
-        _month,
-        new_passengers
-    FROM 
-        trips_db.fact_passenger_summary
-    ORDER BY
-        city_id,
-        _month
-), 
-actual_trips AS (
+/* 2. MONTHLY CITY-LEVEL TRIPS TARGET PERFORMANCE REPORT */
+
+WITH Actual_trips AS (
     SELECT
-        ft.city_id,
-        DATE_TRUNC('month', ft._date) AS MONTHS,
-        COUNT(ft.trip_id) AS trip_number,
-        AVG(ft.passenger_rating) AS avg_passenger_rating,
-        np.new_passengers
-    FROM 
-        trips_db.fact_trips ft
-    JOIN 
-        new_passengers np
-        ON ft.city_id = np.city_id 
-        AND DATE_TRUNC('month', ft._date) = np._month
-    GROUP BY
-        ft.city_id,
-        MONTHS,
-        np.new_passengers
-    ORDER BY
-        ft.city_id,
-        MONTHS
-), 
-targeted_trips AS (
-    SELECT
-        mtt.city_id,
-        DATE_TRUNC('month', mtt._month) AS MONTHS,
-        mtt.total_target_trips,
-        mtnp.target_new_passengers
-    FROM
-        targets_db.monthly_target_trips mtt
-    JOIN
-        targets_db.monthly_target_new_passengers mtnp
-        ON mtt.city_id = mtnp.city_id
-        AND mtt._month = mtnp._month
-    GROUP BY
-        mtt.city_id,
-        MONTHS,
-        mtt.total_target_trips,
-        mtnp.target_new_passengers
-    ORDER BY
-        city_id,
-        MONTHS        
-), 
-targeted_avg_passenger_rating AS (
-    SELECT 
-        cpr.city_id,
-        DATE_TRUNC('month', months._month) AS MONTHS,
-        cpr.target_avg_passenger_rating
-    FROM 
-        targets_db.city_target_passenger_rating cpr
-    JOIN 
-        (
-            SELECT 
-                DISTINCT city_id, 
-                _month 
-            FROM 
-                targets_db.monthly_target_trips
-        ) months
-    ON 
-        cpr.city_id = months.city_id
-    ORDER BY 
-        cpr.city_id, months._month
+        c.city_name,
+        dd.month_name,
+        DATE_TRUNC('month', f._date) AS months,
+        COUNT(f.trip_id) AS actual_trips
+    FROM trips_db.fact_trips f
+    JOIN trips_db.dim_city c 
+        ON f.city_id = c.city_id 
+    JOIN trips_db.dim_date dd 
+        ON f._date = dd._date
+    GROUP BY c.city_name, dd.month_name, DATE_TRUNC('month', f._date)
 ),
-targeted_trips_m AS (
+
+Target_trips AS (
     SELECT
-        tt.city_id,
-        tt.MONTHS,
-        tt.total_target_trips,
-        tt.target_new_passengers,
-        ta.target_avg_passenger_rating
-    FROM
-        targeted_trips tt
-    JOIN
-        targeted_avg_passenger_rating ta
-    ON
-        tt.city_id = ta.city_id
-    AND
-        tt.MONTHS = ta.MONTHS
-),
-differences AS (
-    SELECT
-        at.city_id,
-        at.MONTHS,
-        at.trip_number AS total_actual_trips,
-        tt.total_target_trips,
-        ROUND((at.trip_number::numeric - tt.total_target_trips::numeric) / tt.total_target_trips * 100::numeric, 2) AS trip_percentage_diff,
-        CASE
-            WHEN at.trip_number = tt.total_target_trips THEN 'Below Target'
-            WHEN at.trip_number > tt.total_target_trips THEN 'Above Target'
-            ELSE 'Below Target'
-        END AS trip_target_status,
-        at.avg_passenger_rating,
-        tt.target_avg_passenger_rating,
-        ROUND(((at.avg_passenger_rating::numeric - tt.target_avg_passenger_rating::numeric) / tt.target_avg_passenger_rating::numeric) * 100, 2) AS rating_percentage_diff,
-        CASE
-            WHEN at.avg_passenger_rating = tt.target_avg_passenger_rating THEN 'Below Target'
-            WHEN at.avg_passenger_rating > tt.target_avg_passenger_rating THEN 'Above Target'
-            ELSE 'Below Target'
-        END AS rating_target_status,
-        at.new_passengers,
-        tt.target_new_passengers,
-        ROUND((at.new_passengers::numeric - tt.target_new_passengers::numeric) / tt.target_new_passengers::numeric * 100, 2) AS passenger_percentage_diff,
-        CASE
-            WHEN at.new_passengers = tt.target_new_passengers THEN 'Below Target'
-            WHEN at.new_passengers > tt.target_new_passengers THEN 'Above Target'
-            ELSE 'Below Target'
-        END AS passenger_target_status
-    FROM
-        actual_trips at
-    JOIN
-        targeted_trips_m tt
-    ON
-        at.city_id = tt.city_id
-        AND at.MONTHS = tt.MONTHS
+        c.city_name,
+        dd.month_name,
+        DATE_TRUNC('month', mt._month) AS months,
+        SUM(mt.total_target_trips) AS target_trips
+    FROM targets_db.monthly_target_trips mt
+    JOIN trips_db.dim_city c 
+        ON mt.city_id = c.city_id
+    JOIN trips_db.dim_date dd 
+        ON mt._month = dd._date
+    GROUP BY c.city_name, dd.month_name, DATE_TRUNC('month', mt._month)
 )
 
-SELECT 	
-	dc.city_name AS City_name,
-	d.months,
-	d.total_actual_trips,
-	d.total_target_trips,
-	d.trip_percentage_diff,
-	d.trip_target_status,
-	d.avg_passenger_rating,
-	d.target_avg_passenger_rating,
-	d.rating_percentage_diff,
-	d.rating_target_status,
-	d.new_passengers,
-	d.target_new_passengers,
-	d.passenger_percentage_diff,
-	d.passenger_target_status
-FROM
-    differences d
-JOIN 
-	trips_db.dim_city dc
-ON
-	d.city_id = dc.city_id
-ORDER BY
-	city_name,
-	months;
+-- Final selection of the report
 SELECT 
-	city_name AS City_name,
-    mta.months::date AS month_date,
-    dd.month_name,
-    MAX(mta.total_actual_trips) AS actual_trips,
-    MAX(mta.total_target_trips) AS target_trips,
-    MAX(mta.trip_target_status) AS performance_status,
-    MAX(mta.trip_percentage_diff) AS "%_difference"
-FROM 
-    trips_db.monthly_target_achievement AS mta
-JOIN
-    trips_db.dim_date AS dd
-    ON mta.months::date = dd.start_of_month
-GROUP BY 
-    city_name,
-    mta.months::date,
-    dd.month_name
-ORDER BY 
-    City_name, month_date;
+    a.city_name,
+    a.month_name,
+    a.actual_trips,
+    t.target_trips,
+    CASE 
+        WHEN a.actual_trips > t.target_trips THEN 'Above Target'
+        ELSE 'Below Target'
+    END AS performance_status,
+	ROUND(((a.actual_trips - t.target_trips) / NULLIF(t.target_trips, 0)::numeric) * 100, 2) AS "%_difference"
+FROM Actual_trips a
+JOIN Target_trips t
+    ON a.city_name = t.city_name 
+   AND a.months = t.months
+ORDER BY a.city_name, a.months;
+
 
 -- Business Request - 3: City-Level Repeat Passenger Trip Frequency Report
 SELECT 
